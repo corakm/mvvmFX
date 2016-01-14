@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2015 Alexander Casall, Manuel Mauky
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package de.saxsys.mvvmfx.utils.mapping;
 
 import javafx.beans.property.IntegerProperty;
@@ -375,9 +390,6 @@ public class ModelWrapperTest {
         nicknames.remove("captain");
         assertThat(personWrapper.isDifferent()).isTrue();
 
-        nicknames.remove("captain");
-        assertThat(personWrapper.isDifferent()).isTrue();
-
         nicknames.add("captain");
         assertThat(personWrapper.isDifferent()).isFalse();
 
@@ -393,8 +405,19 @@ public class ModelWrapperTest {
         personWrapper.reload();
         assertThat(personWrapper.isDifferent()).isFalse();
 
-        nicknames.add("captain");
-        assertThat(personWrapper.isDifferent()).isFalse();
+        nicknames.add("captain"); // duplicate captain
+		assertThat(personWrapper.isDifferent()).isTrue();
+		
+		person.getNicknames().add("captain"); // now both have 2x "captain" but the modelWrapper has no chance to realize this change in the model element...
+		// ... for this reason the different flag will still be true
+		assertThat(personWrapper.isDifferent()).isTrue();
+		
+		// ... but if we add another value to the nickname-Property, the modelWrapper can react to this change
+		person.getNicknames().add("other");
+		nicknames.add("other");
+		assertThat(personWrapper.isDifferent()).isFalse();
+		
+		
 
         nicknames.add("player");
         assertThat(personWrapper.isDifferent()).isTrue();
@@ -455,12 +478,23 @@ public class ModelWrapperTest {
 
         nicknames.add("captain");
         assertThat(personWrapper.isDifferent()).isFalse();
+	
+		person.getNicknames().add("captain"); // duplicate value
+		nicknames.add("captain");
+        assertThat(personWrapper.isDifferent()).isFalse();
 
         nicknames.add("player");
         assertThat(personWrapper.isDifferent()).isTrue();
 
-        nicknames.remove("player");
+		person.getNicknames().add("player");
+        assertThat(personWrapper.isDifferent()).isTrue(); // still true because the modelWrapper can't detect the change in the model
+		
+		person.setName("luise");
+		name.set("luise"); // this triggers the recalculation of the different-flag which will now detect the previous change to the nicknames list
         assertThat(personWrapper.isDifferent()).isFalse();
+		
+		
+		
 
         nicknames.setValue(FXCollections.observableArrayList("spectator"));
         assertThat(personWrapper.isDifferent()).isTrue();
